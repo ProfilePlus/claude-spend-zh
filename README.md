@@ -27,11 +27,11 @@
 <details>
 <summary>点击展开截图</summary>
 
-<img width="1910" height="966" alt="截图" src="https://github.com/user-attachments/assets/11cc7149-d4dd-4e44-a3a0-0b48e935b7bc" />
+**中文首页**
+<img width="1400" height="900" alt="首页截图" src="screenshots-dashboard/landing.png">
 
-<img width="1906" height="966" alt="截图" src="https://github.com/user-attachments/assets/537c3611-5794-41d2-864e-e368e6949812" />
-
-<img width="1908" height="969" alt="截图" src="https://github.com/user-attachments/assets/aaaa8ce5-2025-407d-8596-ea1965748691" />
+**中文仪表盘**（首次使用显示此界面，有数据后会自动分析）
+<img width="1400" height="900" alt="仪表盘截图" src="screenshots-dashboard/01-overview.png">
 
 </details>
 
