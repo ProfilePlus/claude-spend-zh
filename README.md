@@ -28,10 +28,10 @@
 <summary>点击展开截图</summary>
 
 **中文首页**
-<img width="1400" height="900" alt="首页截图" src="screenshots-dashboard/landing.png">
+<img alt="首页截图" src="screenshots-dashboard/landing.png">
 
 **中文仪表盘**（首次使用显示此界面，有数据后会自动分析）
-<img width="1400" height="900" alt="仪表盘截图" src="screenshots-dashboard/01-overview.png">
+<img alt="仪表盘截图" src="screenshots-dashboard/01-overview.png">
 
 </details>
 
