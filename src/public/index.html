@@ -811,6 +811,10 @@
     </div>
     <div class="header-right">
       <div class="unit-switcher">
+        <button class="unit-btn active" data-lang="zh">中文</button>
+        <button class="unit-btn" data-lang="en">English</button>
+      </div>
+      <div class="unit-switcher">
         <button class="unit-btn active" data-unit="auto">自动</button>
         <button class="unit-btn" data-unit="wan">万</button>
         <button class="unit-btn" data-unit="baiwan">百万</button>
@@ -1023,6 +1027,194 @@ let dateFilter = { type: 'all', from: null, to: null };
 let tokenUnit = 'auto'; // auto | wan | baiwan | yi
 let currentSort = { key: 'total', dir: 'desc' };
 let searchQuery = '';
+let currentLang = 'zh'; // zh | en
+
+// ---- i18n Language Pack ----
+const i18n = {
+  zh: {
+    common: {
+      refresh: '刷新',
+      share: '分享统计',
+      search: '搜索提示词、模型、项目...',
+      sessions: '个会话',
+      input: '输入',
+      output: '输出',
+      cacheRead: '缓存读取',
+      cacheWrite: '缓存写入',
+      total: '总计',
+      auto: '自动',
+      wan: '万',
+      baiwan: '百万',
+      yi: '亿',
+    },
+    privacy: '所有数据仅保存在你的设备上。不会发送到任何地方。',
+    hero: {
+      title: '你的 Claude Code 使用情况，可视化呈现。',
+      subtitle: '看看你的 token 都花在了哪里。',
+    },
+    howTokens: {
+      title: 'Claude Code token 工作原理',
+      intro: '每次你发送一条消息，Claude 不仅仅读取你最新的一条消息。它会从头开始<strong>重新读取整个对话</strong>。这就是为什么 token 消耗得很快。',
+      exampleTitle: '示例：一个 3 条消息的对话',
+      step1: '你发送"帮我修复这个 bug"。Claude 全新读取你的消息（<span style="color:var(--indigo)">输入</span>）并保存对话到缓存（<span style="color:var(--rose)">缓存写入</span>）。',
+      step2: '你回复"试试另一个文件"。Claude 从缓存中复用第 1 条（<span style="color:var(--amber)">缓存读取</span> — 便宜 10 倍），只全新处理你的新消息（<span style="color:var(--indigo)">输入</span>）。然后保存更新后的对话（<span style="color:var(--rose)">缓存写入</span>）。',
+      step3: 'Claude 从缓存复用第 1-2 条（<span style="color:var(--amber)">缓存读取</span>）并全新处理你的新消息（<span style="color:var(--indigo)">输入</span>）。Claude 的回复是<span style="color:var(--teal)">输出</span>。',
+      totalNote: '如果没有缓存，每条消息都要按原价处理。缓存读取可以帮你节省最多 10 倍的重复上下文费用。',
+      typeInput: '<strong>输入</strong> — 你的消息 + 对话历史，全新处理。按原价计费。',
+      typeCacheWrite: '<strong>缓存写入</strong> — Claude 保存你的对话，以便下次不必重新处理所有内容。费用是输入的 1.25 倍，但只发生一次。',
+      typeCacheRead: '<strong>缓存读取</strong> — 后续消息复用已保存的上下文。比输入便宜 10 倍。缓存读取越多 = 节省越多。',
+      typeOutput: '<strong>输出</strong> — Claude 写回的内容。每个 token 单价最高，但通常数量最少。',
+      tip: '<strong>提示：</strong>切换任务时使用 <code>/clear</code>。这会重置对话，让 Claude 停止重新读取你不再需要的旧上下文。',
+    },
+    stats: {
+      totalUsage: '总使用量',
+      totalUsageTip: '你所有对话中的全部 token。输入 = 全新上下文，缓存写入 = 首次缓存，缓存读取 = 从缓存复用（便宜 10 倍），输出 = Claude 的回复。',
+      sessions: '对话数',
+      sessionsTip: '每次你启动 Claude Code 并开始聊天，就算一个对话。新对话会从头开始，没有先前的上下文。',
+      messages: '发送消息数',
+      messagesTip: '每次你按回车发送内容给 Claude，就算一条消息。这包括 Claude 在后台自动进行的工具调用。',
+      cacheHitRate: '缓存命中率',
+      cacheHitRateTip: '从缓存提供而非全新处理的输入 token 百分比。越高越好 -- 缓存 token 便宜 10 倍，还能帮你保持在速率限制内。',
+      avgPerSession: '每个平均使用约',
+      avgPerMessage: '每条消息平均使用约',
+      fromCache: 'token 来自缓存',
+    },
+    insights: {
+      title: '洞察',
+    },
+    charts: {
+      dailyTitle: '每日 Token 数量',
+      dailyTip: '你每天使用的 token 数量，按类型和费用细分。',
+      modelTitle: '按模型',
+    },
+    prompts: {
+      title: '消耗最高的提示词',
+      titleTip: '按 token 消耗量排名的前 20 条单独消息。简短模糊的消息如"是的"经常排名最高，因为它们会触发大量的工具调用，Claude 需要反复揣测你的意图。',
+    },
+    sessions: {
+      title: '所有会话',
+      date: '日期',
+      prompt: '你的提问',
+      model: '模型',
+      modelTip: '使用的 AI 模型。Opus 能力最强（也消耗更多 token），Sonnet 更快更轻量。',
+      queries: '消息数',
+      queriesTip: '这个对话中发生了多少次往返消息，包括 Claude 自动进行的工具调用。',
+      totalTokens: '总 token',
+      totalTokensTip: '此对话使用的 token 总数。越高费用越高。长对话成本更高，因为 Claude 每轮都要重新读取所有内容。',
+      inputTokens: '读取',
+      inputTokensTip: 'Claude 读取的 token：你的消息、对话历史、文件内容和系统上下文。这会随着每条消息递增，因为完整历史会被重新发送。',
+      outputTokens: '写入',
+      outputTokensTip: 'Claude 写回的 token：回复、代码、解释。通常只占总费用的一小部分。',
+    },
+    dateFilter: {
+      all: '全部',
+      today: '今天',
+      last7d: '近 7 天',
+      last30d: '近 30 天',
+    },
+    footer: {
+      text1: '此工具 100% 本地运行 -- 无分析、无追踪。如果你觉得有用（或者没用），欢迎联系我',
+      text2: '用',
+      text3: '和 ❤ 制作 by',
+    },
+  },
+  en: {
+    common: {
+      refresh: 'Refresh',
+      share: 'Share Stats',
+      search: 'Search prompts, models, projects...',
+      sessions: 'sessions',
+      input: 'Input',
+      output: 'Output',
+      cacheRead: 'Cache Read',
+      cacheWrite: 'Cache Write',
+      total: 'Total',
+      auto: 'Auto',
+      wan: '10K',
+      baiwan: '1M',
+      yi: '100M',
+    },
+    privacy: 'All data stays on your device. Nothing is sent anywhere.',
+    hero: {
+      title: 'Your Claude Code usage, visualized.',
+      subtitle: 'See where your tokens go.',
+    },
+    howTokens: {
+      title: 'How Claude Code tokens work',
+      intro: 'Every time you send a message, Claude doesn\'t just read your latest message. It <strong>re-reads the entire conversation</strong> from the start. That\'s why tokens add up fast.',
+      exampleTitle: 'Example: A 3-message conversation',
+      step1: 'You send "help me fix this bug". Claude reads your message fresh (<span style="color:var(--indigo)">input</span>) and saves the conversation to cache (<span style="color:var(--rose)">cache write</span>).',
+      step2: 'You reply "try another file". Claude reuses message 1 from cache (<span style="color:var(--amber)">cache read</span> — 10x cheaper), only processes your new message fresh (<span style="color:var(--indigo)">input</span>). Then saves the updated conversation (<span style="color:var(--rose)">cache write</span>).',
+      step3: 'Claude reuses messages 1-2 from cache (<span style="color:var(--amber)">cache read</span>) and processes your new message fresh (<span style="color:var(--indigo)">input</span>). Claude\'s reply is <span style="color:var(--teal)">output</span>.',
+      totalNote: 'Without cache, every message would be processed at full price. Cache reads save you up to 10x on repeated context.',
+      typeInput: '<strong>Input</strong> — Your messages + conversation history, processed fresh. Billed at full price.',
+      typeCacheWrite: '<strong>Cache Write</strong> — Claude saves your conversation so it doesn\'t have to reprocess everything next time. Costs 1.25x input, but only happens once.',
+      typeCacheRead: '<strong>Cache Read</strong> — Later messages reuse saved context. 10x cheaper than input. More cache reads = more savings.',
+      typeOutput: '<strong>Output</strong> — What Claude writes back. Highest per-token price, but usually the smallest amount.',
+      tip: '<strong>Tip:</strong> Use <code>/clear</code> when switching tasks. It resets the conversation so Claude stops re-reading old context you no longer need.',
+    },
+    stats: {
+      totalUsage: 'Total Usage',
+      totalUsageTip: 'All tokens across all your conversations. Input = fresh context, Cache Write = first-time cache, Cache Read = reused from cache (10x cheaper), Output = Claude\'s replies.',
+      sessions: 'Sessions',
+      sessionsTip: 'Each time you start Claude Code and begin chatting counts as one session. New sessions start fresh with no prior context.',
+      messages: 'Messages Sent',
+      messagesTip: 'Every time you hit enter to send something to Claude counts as one message. This includes follow-up tool calls Claude makes automatically in the background.',
+      cacheHitRate: 'Cache Hit Rate',
+      cacheHitRateTip: 'Percentage of input tokens served from cache rather than processed fresh. Higher is better -- cached tokens are 10x cheaper and help you stay within rate limits.',
+      avgPerSession: 'avg per session',
+      avgPerMessage: 'avg per message',
+      fromCache: 'tokens from cache',
+    },
+    insights: {
+      title: 'Insights',
+    },
+    charts: {
+      dailyTitle: 'Daily Token Usage',
+      dailyTip: 'Your token usage per day, broken down by type and cost.',
+      modelTitle: 'By Model',
+    },
+    prompts: {
+      title: 'Most Expensive Prompts',
+      titleTip: 'Top 20 individual messages ranked by token consumption. Short vague messages like "yes" often rank highest because they trigger lots of tool calls as Claude tries to figure out what you mean.',
+    },
+    sessions: {
+      title: 'All Sessions',
+      date: 'Date',
+      prompt: 'Your Prompt',
+      model: 'Model',
+      modelTip: 'The AI model used. Opus is most capable (and uses more tokens), Sonnet is faster and lighter.',
+      queries: 'Queries',
+      queriesTip: 'How many back-and-forth messages happened in this conversation, including tool calls Claude made automatically.',
+      totalTokens: 'Total Tokens',
+      totalTokensTip: 'Total tokens used by this conversation. Higher = more expensive. Long conversations cost more because Claude re-reads everything each turn.',
+      inputTokens: 'Input',
+      inputTokensTip: 'Tokens Claude read: your messages, conversation history, file contents, and system context. This grows with each message because the full history is resent.',
+      outputTokens: 'Output',
+      outputTokensTip: 'Tokens Claude wrote back: replies, code, explanations. Usually a small fraction of total cost.',
+    },
+    dateFilter: {
+      all: 'All',
+      today: 'Today',
+      last7d: 'Last 7 Days',
+      last30d: 'Last 30 Days',
+    },
+    footer: {
+      text1: 'This tool runs 100% locally -- no analytics, no tracking. If you find it useful (or not), feel free to reach out',
+      text2: 'Built with',
+      text3: 'and ❤ by',
+    },
+  },
+};
+
+function t(key) {
+  const keys = key.split('.');
+  let value = i18n[currentLang];
+  for (const k of keys) {
+    value = value?.[k];
+  }
+  return value || key;
+}
 
 // ---- Date filter logic ----
 function applyDateFilter() {
@@ -1115,9 +1307,9 @@ function initDateFilter() {
 }
 
 function initUnitSwitcher() {
-  document.querySelectorAll('.unit-btn').forEach(btn => {
+  document.querySelectorAll('.unit-btn[data-unit]').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.unit-btn[data-unit]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       tokenUnit = btn.dataset.unit;
       render();
@@ -1125,23 +1317,155 @@ function initUnitSwitcher() {
   });
 }
 
+function initLangSwitcher() {
+  document.querySelectorAll('.unit-btn[data-lang]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.unit-btn[data-lang]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentLang = btn.dataset.lang;
+      updateStaticTexts();
+      updateUnitButtonTexts();
+      updateDateFilterButtonTexts();
+      render();
+    });
+  });
+}
+
+function updateStaticTexts() {
+  // Privacy notice
+  document.querySelector('.privacy-notice').innerHTML = '&#128274; ' + t('privacy');
+
+  // Hero section
+  document.querySelector('.hero-title').textContent = t('hero.title');
+  document.querySelector('.hero-subtitle').textContent = t('hero.subtitle');
+
+  // Buttons
+  document.querySelectorAll('.refresh-btn')[0].innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>' + t('common.share');
+  document.querySelectorAll('.refresh-btn')[1].innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>' + t('common.refresh');
+
+  // Search placeholder
+  document.getElementById('searchInput').placeholder = t('common.search');
+
+  // Sessions table headers
+  const thMap = {
+    'date': t('sessions.date'),
+    'prompt': t('sessions.prompt'),
+    'model': t('sessions.model'),
+    'queries': t('sessions.queries'),
+    'total': t('sessions.totalTokens'),
+    'input': t('sessions.inputTokens'),
+    'output': t('sessions.outputTokens')
+  };
+  document.querySelectorAll('.sessions-table th[data-sort]').forEach(th => {
+    const sortKey = th.getAttribute('data-sort');
+    if (thMap[sortKey]) {
+      // Preserve tooltip if exists
+      const tooltip = th.querySelector('.tooltip');
+      if (tooltip) {
+        const tipKey = sortKey === 'model' ? 'modelTip' :
+                       sortKey === 'queries' ? 'queriesTip' :
+                       sortKey === 'total' ? 'totalTokensTip' :
+                       sortKey === 'input' ? 'inputTokensTip' :
+                       sortKey === 'output' ? 'outputTokensTip' : null;
+        if (tipKey) {
+          tooltip.textContent = t('sessions.' + tipKey);
+        }
+        th.childNodes[0].textContent = thMap[sortKey];
+      } else {
+        th.textContent = thMap[sortKey];
+      }
+    }
+  });
+
+  // Chart titles
+  const dailyChartTitle = document.querySelector('.chart-card h3.has-tooltip');
+  if (dailyChartTitle) {
+    const tooltip = dailyChartTitle.querySelector('.tooltip');
+    if (tooltip) {
+      tooltip.textContent = t('charts.dailyTip');
+    }
+    dailyChartTitle.childNodes[0].textContent = t('charts.dailyTitle');
+  }
+
+  // Model chart title
+  const chartCards = document.querySelectorAll('.chart-card h3');
+  if (chartCards[1]) {
+    chartCards[1].textContent = t('charts.modelTitle');
+  }
+
+  // Chart legends
+  const legendItems = document.querySelectorAll('.legend .legend-item');
+  const legendTexts = [t('common.input'), t('common.cacheWrite'), t('common.cacheRead'), t('common.output')];
+  legendItems.forEach((item, i) => {
+    if (legendTexts[i]) {
+      const textNode = item.childNodes[1];
+      if (textNode) textNode.textContent = ' ' + legendTexts[i];
+    }
+  });
+
+  // Section titles
+  const insightsTitle = document.querySelector('#insightsSection .section-title');
+  if (insightsTitle) insightsTitle.textContent = t('insights.title');
+
+  const promptsTitle = document.querySelector('.top-prompts .section-title');
+  if (promptsTitle) {
+    const tooltip = promptsTitle.querySelector('.tooltip');
+    if (tooltip) {
+      tooltip.textContent = t('prompts.titleTip');
+    }
+    promptsTitle.childNodes[0].textContent = t('prompts.title');
+  }
+
+  const sessionsTitle = document.querySelector('.sessions-section .section-title');
+  if (sessionsTitle) sessionsTitle.textContent = t('sessions.title');
+
+  // Footer
+  const footer = document.querySelector('.footer');
+  footer.innerHTML =
+    '<div style="margin-bottom: 8px; color: var(--text-secondary); font-size: 13px;">' + t('footer.text1') + ' <a href="mailto:writetoaniketparihar@gmail.com">writetoaniketparihar@gmail.com</a></div>' +
+    t('footer.text2') + ' <a href="https://claude.ai/code" target="_blank">Claude Code</a> ' + t('footer.text3') + ' <a href="https://www.linkedin.com/in/writetoaniketparihar/" target="_blank">Aniket</a>';
+}
+
+function updateUnitButtonTexts() {
+  const unitBtns = document.querySelectorAll('.unit-btn[data-unit]');
+  unitBtns[0].textContent = t('common.auto');
+  unitBtns[1].textContent = t('common.wan');
+  unitBtns[2].textContent = t('common.baiwan');
+  unitBtns[3].textContent = t('common.yi');
+}
+
+function updateDateFilterButtonTexts() {
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  filterBtns[0].textContent = t('dateFilter.all');
+  filterBtns[1].textContent = t('dateFilter.today');
+  filterBtns[2].textContent = t('dateFilter.last7d');
+  filterBtns[3].textContent = t('dateFilter.last30d');
+}
+
+
 function fmt(n) {
   if (n == null || isNaN(n)) return '0';
+  const suffix = currentLang === 'zh' ?
+    { yi: ' 亿', baiwan: ' 百万', wan: ' 万' } :
+    { yi: '×100M', baiwan: 'M', wan: 'K' };
+
   if (tokenUnit === 'yi') {
-    if (n >= 100_000_000) return (n / 100_000_000).toFixed(2) + ' 亿';
-    if (n >= 10_000_000) return (n / 100_000_000).toFixed(3) + ' 亿';
-    return (n / 100_000_000).toFixed(4) + ' 亿';
+    if (n >= 100_000_000) return (n / 100_000_000).toFixed(2) + suffix.yi;
+    if (n >= 10_000_000) return (n / 100_000_000).toFixed(3) + suffix.yi;
+    return (n / 100_000_000).toFixed(4) + suffix.yi;
   }
   if (tokenUnit === 'baiwan') {
-    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' 百万';
-    return (n / 1_000_000).toFixed(2) + ' 百万';
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + suffix.baiwan;
+    return (n / 1_000_000).toFixed(2) + suffix.baiwan;
   }
   if (tokenUnit === 'wan') {
-    if (n >= 10_000) return (n / 10_000).toFixed(1) + ' 万';
-    return (n / 10_000).toFixed(2) + ' 万';
+    if (n >= 10_000) return (n / 10_000).toFixed(1) + suffix.wan;
+    return (n / 10_000).toFixed(2) + suffix.wan;
   }
   // auto
-  if (n >= 100_000_000) return (n / 100_000_000).toFixed(2) + ' 亿';
+  if (n >= 100_000_000) return (n / 100_000_000).toFixed(2) + suffix.yi;
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
   if (n >= 10_000) return (n / 1_000).toFixed(0) + 'K';
   if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
@@ -1222,6 +1546,7 @@ async function fetchData() {
     FILTERED = DATA;
     initDateFilter();
     initUnitSwitcher();
+    initLangSwitcher();
     render();
   } catch (err) {
     showError('加载数据失败: ' + err.message);
@@ -1282,21 +1607,21 @@ function render() {
 
 // Stats
 function renderStats() {
-  const t = FILTERED.totals;
-  const range = t.dateRange ? `${formatDate(t.dateRange.from)} - ${formatDate(t.dateRange.to)}` : '';
+  const totals = FILTERED.totals;
+  const range = totals.dateRange ? `${formatDate(totals.dateRange.from)} - ${formatDate(totals.dateRange.to)}` : '';
   document.getElementById('dateRange').textContent = range;
 
-  const avgTokensPerMsg = t.totalQueries > 0 ? Math.round(t.totalTokens / t.totalQueries) : 0;
+  const avgTokensPerMsg = totals.totalQueries > 0 ? Math.round(totals.totalTokens / totals.totalQueries) : 0;
 
   const cards = [
-    { label: '总使用量', value: fmt(t.totalTokens), sub: `${fmt(t.totalInputTokens)} 输入 · ${fmt(t.totalCacheCreationTokens || 0)} 缓存写入 · ${fmt(t.totalCacheReadTokens || 0)} 缓存读取 · ${fmt(t.totalOutputTokens)} 输出`,
-      tip: '你所有对话中的全部 token。输入 = 全新上下文，缓存写入 = 首次缓存，缓存读取 = 从缓存复用（便宜 10 倍），输出 = Claude 的回复。' },
-    { label: '对话数', value: fmtFull(t.totalSessions), sub: `每个平均使用约 ${fmt(t.avgTokensPerSession)} token`,
-      tip: '每次你启动 Claude Code 并开始聊天，就算一个对话。新对话会从头开始，没有先前的上下文。' },
-    { label: '发送消息数', value: fmtFull(t.totalQueries), sub: `每条消息平均使用约 ${fmt(avgTokensPerMsg)} token`,
-      tip: '每次你按回车发送内容给 Claude，就算一条消息。这包括 Claude 在后台自动进行的跟进工具调用。' },
-    { label: '缓存命中率', value: `${((t.cacheHitRate || 0) * 100).toFixed(0)}%`, sub: `${fmt(t.totalCacheReadTokens || 0)} token 来自缓存`,
-      tip: '从缓存提供而非全新处理的输入 token 百分比。越高越好 -- 缓存 token 便宜 10 倍，还能帮你保持在速率限制内。' },
+    { label: t('stats.totalUsage'), value: fmt(totals.totalTokens), sub: `${fmt(totals.totalInputTokens)} ${t('common.input')} · ${fmt(totals.totalCacheCreationTokens || 0)} ${t('common.cacheWrite')} · ${fmt(totals.totalCacheReadTokens || 0)} ${t('common.cacheRead')} · ${fmt(totals.totalOutputTokens)} ${t('common.output')}`,
+      tip: t('stats.totalUsageTip') },
+    { label: t('stats.sessions'), value: fmtFull(totals.totalSessions), sub: `${t('stats.avgPerSession')} ${fmt(totals.avgTokensPerSession)} token`,
+      tip: t('stats.sessionsTip') },
+    { label: t('stats.messages'), value: fmtFull(totals.totalQueries), sub: `${t('stats.avgPerMessage')} ${fmt(avgTokensPerMsg)} token`,
+      tip: t('stats.messagesTip') },
+    { label: t('stats.cacheHitRate'), value: `${((totals.cacheHitRate || 0) * 100).toFixed(0)}%`, sub: `${fmt(totals.totalCacheReadTokens || 0)} ${t('stats.fromCache')}`,
+      tip: t('stats.cacheHitRateTip') },
   ];
 
   document.getElementById('statsRow').innerHTML = cards.map((c, i) => `
@@ -1653,7 +1978,7 @@ function renderSessions() {
   const fn = sortFns[currentSort.key] || sortFns.total;
   sessions.sort((a, b) => currentSort.dir === 'desc' ? fn(b, a) : fn(a, b));
 
-  document.getElementById('sessionCount').textContent = `${sessions.length} 个会话`;
+  document.getElementById('sessionCount').textContent = `${sessions.length} ${t('common.sessions')}`;
 
   document.getElementById('sessionsBody').innerHTML = sessions.map(s => `
     <tr onclick="openDrilldown('${s.sessionId}')">
