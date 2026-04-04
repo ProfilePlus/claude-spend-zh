@@ -1,6 +1,6 @@
 {
   "name": "claude-spend-zh",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "description": "See where your Claude Code tokens go. One command, zero setup. (中文本地化版)",
   "main": "src/index.js",
   "bin": {
