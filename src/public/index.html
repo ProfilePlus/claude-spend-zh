@@ -647,6 +647,83 @@
   .warnings-banner ul { margin: 4px 0 0 16px; padding: 0; }
   .warnings-banner li { margin-bottom: 2px; }
 
+  /* Date filter */
+  .date-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .filter-presets {
+    display: flex;
+    gap: 4px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+  }
+  .filter-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 5px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font);
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .filter-btn:hover {
+    color: var(--indigo);
+    background: rgba(99,102,241,0.06);
+  }
+  .filter-btn.active {
+    background: var(--gradient-main);
+    color: white;
+    box-shadow: 0 2px 6px rgba(99,102,241,0.25);
+  }
+  .filter-custom {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .date-input {
+    background: var(--white);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font);
+    outline: none;
+    transition: all 0.2s;
+    width: 130px;
+  }
+  .date-input:focus {
+    border-color: var(--indigo);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+  }
+  .date-sep {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-tertiary);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  @media (max-width: 780px) {
+    .date-filter { width: 100%; order: 10; }
+    .filter-custom { flex: 1; }
+    .date-input { flex: 1; min-width: 0; }
+  }
+
   /* Share card overlay */
   .share-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -701,6 +778,19 @@
     </div>
     <div class="header-right">
       <span id="dateRange" class="date-range"></span>
+      <div class="date-filter">
+        <div class="filter-presets">
+          <button class="filter-btn active" data-range="all">全部</button>
+          <button class="filter-btn" data-range="today">今天</button>
+          <button class="filter-btn" data-range="7d">近 7 天</button>
+          <button class="filter-btn" data-range="30d">近 30 天</button>
+        </div>
+        <div class="filter-custom">
+          <input type="date" id="dateFrom" class="date-input">
+          <span class="date-sep">~</span>
+          <input type="date" id="dateTo" class="date-input">
+        </div>
+      </div>
       <button class="refresh-btn" onclick="generateShareCard()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         分享统计
@@ -889,8 +979,100 @@
 
 <script>
 let DATA = null;
+let FILTERED = null;
+let dateFilter = { type: 'all', from: null, to: null };
 let currentSort = { key: 'total', dir: 'desc' };
 let searchQuery = '';
+
+// ---- Date filter logic ----
+function applyDateFilter() {
+  if (!DATA) return;
+  if (dateFilter.type === 'all') { FILTERED = DATA; render(); return; }
+  const today = new Date().toISOString().split('T')[0];
+  let fromDate, toDate;
+  if (dateFilter.type === 'today') { fromDate = toDate = today; }
+  else if (dateFilter.type === '7d') { toDate = today; const d = new Date(); d.setDate(d.getDate() - 6); fromDate = d.toISOString().split('T')[0]; }
+  else if (dateFilter.type === '30d') { toDate = today; const d = new Date(); d.setDate(d.getDate() - 29); fromDate = d.toISOString().split('T')[0]; }
+  else if (dateFilter.type === 'custom') { fromDate = dateFilter.from; toDate = dateFilter.to; }
+  const filteredSessions = DATA.sessions.filter(s => s.date && s.date !== 'unknown' && s.date >= fromDate && s.date <= toDate);
+  const filteredDailyUsage = DATA.dailyUsage.filter(d => d.date >= fromDate && d.date <= toDate);
+  FILTERED = {
+    sessions: filteredSessions, dailyUsage: filteredDailyUsage,
+    modelBreakdown: recalcModelBreakdown(filteredSessions),
+    projectBreakdown: DATA.projectBreakdown,
+    topPrompts: recalcTopPrompts(filteredSessions),
+    totals: recalcTotals(filteredSessions, filteredDailyUsage),
+    insights: [], warnings: DATA.warnings,
+  };
+  render();
+}
+function recalcTotals(sessions, dailyUsage) {
+  const tS = sessions.length, tQ = sessions.reduce((s,x) => s+x.queryCount, 0);
+  const tT = sessions.reduce((s,x) => s+x.totalTokens, 0);
+  const tI = sessions.reduce((s,x) => s+x.inputTokens, 0);
+  const tO = sessions.reduce((s,x) => s+x.outputTokens, 0);
+  const tCC = sessions.reduce((s,x) => s+x.cacheCreationTokens, 0);
+  const tCR = sessions.reduce((s,x) => s+x.cacheReadTokens, 0);
+  const tCost = sessions.reduce((s,x) => s+x.cost, 0);
+  const tAll = tI + tCC + tCR;
+  return {
+    totalSessions: tS, totalQueries: tQ, totalTokens: tT, totalInputTokens: tI, totalOutputTokens: tO,
+    totalCacheCreationTokens: tCC, totalCacheReadTokens: tCR, totalCost: tCost,
+    totalSaved: tCR * (3/1e6 - 0.30/1e6), cacheHitRate: tAll > 0 ? tCR/tAll : 0,
+    avgTokensPerQuery: tQ > 0 ? Math.round(tT/tQ) : 0,
+    avgTokensPerSession: tS > 0 ? Math.round(tT/tS) : 0,
+    dateRange: dailyUsage.length > 0 ? { from: dailyUsage[0].date, to: dailyUsage[dailyUsage.length-1].date } : null,
+  };
+}
+function recalcModelBreakdown(sessions) {
+  const map = {};
+  for (const s of sessions) for (const q of s.queries) {
+    if (q.model === '<synthetic>' || q.model === 'unknown') continue;
+    if (!map[q.model]) map[q.model] = { model: q.model, inputTokens:0, outputTokens:0, cacheCreationTokens:0, cacheReadTokens:0, totalTokens:0, cost:0, queryCount:0 };
+    const m = map[q.model]; m.inputTokens += q.inputTokens; m.outputTokens += q.outputTokens;
+    m.cacheCreationTokens += (q.cacheCreationTokens||0); m.cacheReadTokens += (q.cacheReadTokens||0);
+    m.totalTokens += q.totalTokens; m.cost += (q.cost||0); m.queryCount += 1;
+  }
+  return Object.values(map);
+}
+function recalcTopPrompts(sessions) {
+  const all = [];
+  for (const session of sessions) {
+    let cur = null, pIn=0, pOut=0, pCW=0, pCR=0, pCost=0;
+    const flush = () => { if (cur && (pIn+pOut+pCW+pCR) > 0) all.push({ prompt: cur.substring(0,300), inputTokens: pIn, outputTokens: pOut, cacheCreationTokens: pCW, cacheReadTokens: pCR, totalTokens: pIn+pOut+pCW+pCR, cost: pCost, date: session.date, sessionId: session.sessionId, model: session.model }); };
+    for (const q of session.queries) {
+      if (q.userPrompt && q.userPrompt !== cur) { flush(); cur = q.userPrompt; pIn=0; pOut=0; pCW=0; pCR=0; pCost=0; }
+      pIn += q.inputTokens; pOut += q.outputTokens; pCW += (q.cacheCreationTokens||0); pCR += (q.cacheReadTokens||0); pCost += (q.cost||0);
+    }
+    flush();
+  }
+  all.sort((a,b) => b.totalTokens - a.totalTokens);
+  return all.slice(0, 20);
+}
+function initDateFilter() {
+  const fromInput = document.getElementById('dateFrom'), toInput = document.getElementById('dateTo');
+  if (DATA && DATA.totals.dateRange) {
+    fromInput.min = DATA.totals.dateRange.from; fromInput.max = DATA.totals.dateRange.to;
+    toInput.min = DATA.totals.dateRange.from; toInput.max = DATA.totals.dateRange.to;
+  }
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active'); dateFilter.type = btn.dataset.range;
+      fromInput.value = ''; toInput.value = '';
+      applyDateFilter();
+    });
+  });
+  function onCustomDateChange() {
+    const from = fromInput.value, to = toInput.value;
+    if (from && to && from <= to) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      dateFilter = { type: 'custom', from, to }; applyDateFilter();
+    }
+  }
+  fromInput.addEventListener('change', onCustomDateChange);
+  toInput.addEventListener('change', onCustomDateChange);
+}
 
 function fmt(n) {
   if (n == null || isNaN(n)) return '0';
@@ -971,6 +1153,8 @@ async function fetchData() {
       return;
     }
     DATA = json;
+    FILTERED = DATA;
+    initDateFilter();
     render();
   } catch (err) {
     showError('加载数据失败: ' + err.message);
@@ -999,7 +1183,7 @@ function showError(msg) {
     '<button onclick="location.reload()" style="padding:8px 20px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;font-size:14px">重试</button>';
 }
 function renderWarnings() {
-  const warnings = DATA.warnings || [];
+  const warnings = FILTERED.warnings || [];
   const banner = document.getElementById('warningsBanner');
   if (!warnings.length) { banner.classList.remove('visible'); return; }
   banner.classList.add('visible');
@@ -1013,6 +1197,7 @@ async function refreshData() {
   if (errEl) errEl.remove();
   try { await fetch('/api/refresh'); } catch {}
   await fetchData();
+  if (dateFilter.type !== 'all') applyDateFilter();
 }
 
 function render() {
@@ -1030,7 +1215,7 @@ function render() {
 
 // Stats
 function renderStats() {
-  const t = DATA.totals;
+  const t = FILTERED.totals;
   const range = t.dateRange ? `${formatDate(t.dateRange.from)} - ${formatDate(t.dateRange.to)}` : '';
   document.getElementById('dateRange').textContent = range;
 
@@ -1057,7 +1242,7 @@ function renderStats() {
 
 // Insights
 function renderInsights() {
-  const insights = DATA.insights || [];
+  const insights = FILTERED.insights || [];
   const section = document.getElementById('insightsSection');
   if (!insights.length) { section.style.display = 'none'; return; }
 
@@ -1086,7 +1271,7 @@ function renderInsights() {
 function renderDailyChart() {
   const canvas = document.getElementById('dailyChart');
   const ctx = canvas.getContext('2d');
-  const data = DATA.dailyUsage;
+  const data = FILTERED.dailyUsage;
   if (!data.length) return;
 
   const dpr = window.devicePixelRatio || 1;
@@ -1201,7 +1386,7 @@ function roundedRect(ctx, x, y, w, h, r) {
 function renderModelChart() {
   const canvas = document.getElementById('modelChart');
   const ctx = canvas.getContext('2d');
-  const data = DATA.modelBreakdown;
+  const data = FILTERED.modelBreakdown;
   if (!data.length) return;
 
   const dpr = window.devicePixelRatio || 1;
@@ -1347,7 +1532,7 @@ function renderProjectBreakdown() {
 
 // Top prompts
 function renderTopPrompts() {
-  const prompts = DATA.topPrompts;
+  const prompts = FILTERED.topPrompts;
   if (!prompts.length) return;
   const maxTokens = prompts[0].totalTokens;
 
@@ -1379,7 +1564,7 @@ function renderTopPrompts() {
 
 // Sessions
 function renderSessions() {
-  let sessions = [...DATA.sessions];
+  let sessions = [...FILTERED.sessions];
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     sessions = sessions.filter(s =>
@@ -1728,7 +1913,7 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
 
 async function generateShareCard() {
   if (!DATA) return;
-  const t = DATA.totals;
+  const t = FILTERED.totals;
 
   await document.fonts.ready;
 
@@ -1770,7 +1955,7 @@ async function generateShareCard() {
   }
 
   // Top insight in amber
-  const insights = DATA.insights || [];
+  const insights = FILTERED.insights || [];
   if (insights.length > 0) {
     ctx.fillStyle = '#F59E0B';
     ctx.font = '600 20px Inter, system-ui';
