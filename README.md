@@ -14,6 +14,19 @@
 
 ---
 
+## 🆕 相比原版新增
+
+> 以下功能为本项目在 [原版 claude-spend](https://github.com/writetoaniketparihar-collab/claude-spend) 基础上独立开发，原版不包含。
+
+| 新增功能 | 说明 |
+|---------|------|
+| 📅 **日期筛选** | 预设快捷按钮（全部 / 今天 / 近 7 天 / 近 30 天）+ 自定义日期范围 |
+| 📊 **实时联动** | 切换日期后，统计卡片、每日趋势图、模型分布图、会话列表等全部实时刷新 |
+
+<img alt="日期筛选功能" src="screenshots-dashboard/date-filter.png">
+
+---
+
 ## ✨ 特性
 
 - 🌐 **纯中文界面** — 专为中文用户设计，无需再啃英文
@@ -28,10 +41,7 @@
 <details>
 <summary>点击展开截图</summary>
 
-**中文首页**
-<img alt="首页截图" src="screenshots-dashboard/landing.png">
-
-**中文仪表盘**（首次使用显示此界面，有数据后会自动分析）
+**中文仪表盘**
 <img alt="仪表盘截图" src="screenshots-dashboard/01-overview.png">
 
 </details>
@@ -73,8 +83,7 @@ npm start
 > A: 100% 安全。所有数据读取自本地 `~/.claude/` 目录，完全离线运行，不发送任何数据。
 
 **Q: 和原版有什么区别？**
-> A: 本项目是 [原版 claude-spend](https://github.com/writetoaniketparihar-collab/claude-spend) 的中文本地化版本，界面和文档已全部翻译为中文。此外还新增了以下功能：
-> - 📅 **日期筛选** — 支持全部/今天/近7天/近30天及自定义日期范围，所有图表和统计实时联动
+> A: 界面和文档全部中文化，并且新增了日期筛选功能（原版没有），详见上方 [🆕 相比原版新增](#-相比原版新增)。
 
 **Q: 支持哪些平台？**
 > A: 支持 macOS、Windows、Linux。只要装有 Node.js 18+ 即可运行。
