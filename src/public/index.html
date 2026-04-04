@@ -647,6 +647,38 @@
   .warnings-banner ul { margin: 4px 0 0 16px; padding: 0; }
   .warnings-banner li { margin-bottom: 2px; }
 
+  /* Token unit switcher */
+  .unit-switcher {
+    display: flex;
+    gap: 4px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+  }
+  .unit-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 5px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font);
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .unit-btn:hover {
+    color: var(--indigo);
+    background: rgba(99,102,241,0.06);
+  }
+  .unit-btn.active {
+    background: var(--gradient-main);
+    color: white;
+    box-shadow: 0 2px 6px rgba(99,102,241,0.25);
+  }
+
   /* Date filter */
   .date-filter {
     display: flex;
@@ -706,6 +738,7 @@
     border-color: var(--indigo);
     box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
   }
+
   .date-sep {
     color: var(--text-tertiary);
     font-size: 12px;
@@ -777,6 +810,12 @@
       <h1>Claude Spend</h1>
     </div>
     <div class="header-right">
+      <div class="unit-switcher">
+        <button class="unit-btn active" data-unit="auto">自动</button>
+        <button class="unit-btn" data-unit="wan">万</button>
+        <button class="unit-btn" data-unit="baiwan">百万</button>
+        <button class="unit-btn" data-unit="yi">亿</button>
+      </div>
       <span id="dateRange" class="date-range"></span>
       <div class="date-filter">
         <div class="filter-presets">
@@ -981,6 +1020,7 @@
 let DATA = null;
 let FILTERED = null;
 let dateFilter = { type: 'all', from: null, to: null };
+let tokenUnit = 'auto'; // auto | wan | baiwan | yi
 let currentSort = { key: 'total', dir: 'desc' };
 let searchQuery = '';
 
@@ -1074,8 +1114,34 @@ function initDateFilter() {
   toInput.addEventListener('change', onCustomDateChange);
 }
 
+function initUnitSwitcher() {
+  document.querySelectorAll('.unit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      tokenUnit = btn.dataset.unit;
+      render();
+    });
+  });
+}
+
 function fmt(n) {
   if (n == null || isNaN(n)) return '0';
+  if (tokenUnit === 'yi') {
+    if (n >= 100_000_000) return (n / 100_000_000).toFixed(2) + ' 亿';
+    if (n >= 10_000_000) return (n / 100_000_000).toFixed(3) + ' 亿';
+    return (n / 100_000_000).toFixed(4) + ' 亿';
+  }
+  if (tokenUnit === 'baiwan') {
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' 百万';
+    return (n / 1_000_000).toFixed(2) + ' 百万';
+  }
+  if (tokenUnit === 'wan') {
+    if (n >= 10_000) return (n / 10_000).toFixed(1) + ' 万';
+    return (n / 10_000).toFixed(2) + ' 万';
+  }
+  // auto
+  if (n >= 100_000_000) return (n / 100_000_000).toFixed(2) + ' 亿';
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
   if (n >= 10_000) return (n / 1_000).toFixed(0) + 'K';
   if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
@@ -1155,6 +1221,7 @@ async function fetchData() {
     DATA = json;
     FILTERED = DATA;
     initDateFilter();
+    initUnitSwitcher();
     render();
   } catch (err) {
     showError('加载数据失败: ' + err.message);
