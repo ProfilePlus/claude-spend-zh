@@ -73,7 +73,8 @@ npm start
 > A: 100% 安全。所有数据读取自本地 `~/.claude/` 目录，完全离线运行，不发送任何数据。
 
 **Q: 和原版有什么区别？**
-> A: 本项目是 [原版 claude-spend](https://github.com/writetoaniketparihar-collab/claude-spend) 的中文本地化版本，界面和文档已全部翻译为中文，功能完全一致。
+> A: 本项目是 [原版 claude-spend](https://github.com/writetoaniketparihar-collab/claude-spend) 的中文本地化版本，界面和文档已全部翻译为中文。此外还新增了以下功能：
+> - 📅 **日期筛选** — 支持全部/今天/近7天/近30天及自定义日期范围，所有图表和统计实时联动
 
 **Q: 支持哪些平台？**
 > A: 支持 macOS、Windows、Linux。只要装有 Node.js 18+ 即可运行。
@@ -94,7 +95,7 @@ claude-spend-zh --help        # 显示帮助
 |---|---|---|
 | 作者 | [@writetoaniketparihar-collab](https://github.com/writetoaniketparihar-collab) | [@ProfilePlus](https://github.com/ProfilePlus) |
 | 语言 | 英文 | 中文 |
-| 功能 | 相同 | 相同 |
+| 功能 | 基础功能 | 基础功能 + 日期筛选 |
 
 ## 📄 许可证
 
