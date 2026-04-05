@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Claude Spend</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -98,8 +100,12 @@
 
   /* ---- HEADER ---- */
   .header {
+    display: flex; flex-direction: column; gap: 12px;
+    margin-bottom: 40px;
+  }
+  .header-row {
     display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 40px; flex-wrap: wrap; gap: 16px;
+    gap: 12px; flex-wrap: wrap;
   }
   .header-left { display: flex; align-items: center; gap: 14px; }
   .logo-mark {
@@ -110,11 +116,20 @@
   }
   .logo-mark svg { width: 22px; height: 22px; }
   .header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
-  .header-right { display: flex; align-items: center; gap: 14px; }
+  .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .header-toolbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 14px; padding: 8px 14px;
+    box-shadow: var(--shadow-sm);
+    margin-left: auto;
+  }
+  .toolbar-sep {
+    width: 1px; height: 20px; background: var(--border-strong); flex-shrink: 0;
+  }
   .date-range {
     color: var(--text-tertiary); font-size: 13px; font-weight: 500;
-    background: var(--white); padding: 6px 14px; border-radius: 20px;
-    border: 1px solid var(--border);
+    white-space: nowrap;
   }
   .refresh-btn {
     background: var(--white); border: 1px solid var(--border);
@@ -733,10 +748,185 @@
     outline: none;
     transition: all 0.2s;
     width: 130px;
+    cursor: pointer;
   }
   .date-input:focus {
     border-color: var(--indigo);
     box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+  }
+  /* Flatpickr overrides to match page style */
+  .flatpickr-calendar {
+    border-radius: 14px !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06) !important;
+    border: 1px solid var(--border) !important;
+    font-family: var(--font) !important;
+    padding: 8px !important;
+    width: 280px !important;
+    background: var(--white) !important;
+  }
+  .flatpickr-calendar::before,
+  .flatpickr-calendar::after {
+    display: none !important;
+  }
+  /* Month navigation header */
+  .flatpickr-months {
+    padding: 4px 0 8px !important;
+    align-items: center !important;
+  }
+  .flatpickr-months .flatpickr-month {
+    height: 32px !important;
+  }
+  .flatpickr-current-month {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: var(--text) !important;
+    padding: 0 !important;
+    height: 32px !important;
+    line-height: 32px !important;
+  }
+  .flatpickr-current-month .flatpickr-monthDropdown-months,
+  .flatpickr-current-month select.flatpickr-monthDropdown-months {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    font-family: var(--font) !important;
+    color: var(--text) !important;
+    background: transparent !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    padding: 0 4px !important;
+  }
+  .flatpickr-current-month input.cur-year {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    font-family: var(--font) !important;
+    color: var(--text) !important;
+  }
+  /* Navigation arrows */
+  .flatpickr-months .flatpickr-prev-month,
+  .flatpickr-months .flatpickr-next-month {
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    top: 8px !important;
+    transition: all 0.15s !important;
+  }
+  .flatpickr-months .flatpickr-prev-month:hover,
+  .flatpickr-months .flatpickr-next-month:hover {
+    background: rgba(99,102,241,0.08) !important;
+  }
+  .flatpickr-months .flatpickr-prev-month svg,
+  .flatpickr-months .flatpickr-next-month svg {
+    width: 12px !important;
+    height: 12px !important;
+    fill: var(--text-secondary) !important;
+  }
+  .flatpickr-months .flatpickr-prev-month:hover svg,
+  .flatpickr-months .flatpickr-next-month:hover svg {
+    fill: var(--indigo) !important;
+  }
+  /* Weekday labels */
+  .flatpickr-weekdays {
+    padding: 0 !important;
+    height: 28px !important;
+  }
+  .flatpickr-weekdaycontainer {
+    display: flex !important;
+  }
+  span.flatpickr-weekday {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--text-tertiary) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.3px !important;
+    font-family: var(--font) !important;
+    background: transparent !important;
+  }
+  /* Day cells */
+  .flatpickr-day {
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    font-family: var(--font) !important;
+    color: var(--text) !important;
+    height: 34px !important;
+    line-height: 34px !important;
+    max-width: 34px !important;
+    margin: 1px !important;
+    border: none !important;
+    transition: all 0.12s ease !important;
+  }
+  .flatpickr-day:hover {
+    background: rgba(99,102,241,0.08) !important;
+    border-color: transparent !important;
+    color: var(--indigo) !important;
+  }
+  .flatpickr-day.selected,
+  .flatpickr-day.selected:hover {
+    background: var(--indigo) !important;
+    border-color: var(--indigo) !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px rgba(99,102,241,0.3) !important;
+    font-weight: 600 !important;
+  }
+  .flatpickr-day.today {
+    border: 2px solid var(--indigo) !important;
+    color: var(--indigo) !important;
+    font-weight: 700 !important;
+  }
+  .flatpickr-day.today:hover {
+    background: rgba(99,102,241,0.08) !important;
+    color: var(--indigo) !important;
+  }
+  .flatpickr-day.today.selected {
+    color: #fff !important;
+    border-color: var(--indigo) !important;
+  }
+  .flatpickr-day.prevMonthDay,
+  .flatpickr-day.nextMonthDay {
+    color: var(--text-tertiary) !important;
+    opacity: 0.4 !important;
+  }
+  .flatpickr-day.prevMonthDay:hover,
+  .flatpickr-day.nextMonthDay:hover {
+    color: var(--text-secondary) !important;
+    opacity: 0.7 !important;
+  }
+  .flatpickr-day.flatpickr-disabled,
+  .flatpickr-day.flatpickr-disabled:hover {
+    color: var(--text-tertiary) !important;
+    opacity: 0.25 !important;
+    cursor: not-allowed !important;
+    background: transparent !important;
+  }
+  /* Days container */
+  .dayContainer {
+    padding: 2px 0 !important;
+    min-width: 252px !important;
+    max-width: 252px !important;
+  }
+  .flatpickr-days {
+    width: 264px !important;
+  }
+  .flatpickr-innerContainer {
+    padding: 0 !important;
+  }
+  /* Year scroll arrows */
+  .numInputWrapper span {
+    border: none !important;
+    background: transparent !important;
+  }
+  .numInputWrapper span:hover {
+    background: rgba(99,102,241,0.08) !important;
+  }
+  .numInputWrapper span svg path {
+    fill: var(--text-tertiary) !important;
+  }
+  .numInputWrapper:hover span svg path {
+    fill: var(--indigo) !important;
   }
 
   .date-sep {
@@ -752,9 +942,11 @@
     font-weight: 500;
   }
   @media (max-width: 780px) {
-    .date-filter { width: 100%; order: 10; }
+    .header-toolbar { width: 100%; padding: 8px 10px; }
+    .date-filter { width: 100%; }
     .filter-custom { flex: 1; }
     .date-input { flex: 1; min-width: 0; }
+    .header-right { width: 100%; justify-content: flex-end; }
   }
 
   /* Share card overlay */
@@ -803,24 +995,36 @@
 
   <!-- Header -->
   <div class="header animate">
-    <div class="header-left">
-      <div class="logo-mark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    <div class="header-row">
+      <div class="header-left">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <h1>Claude Spend</h1>
       </div>
-      <h1>Claude Spend</h1>
+      <div class="header-right">
+        <div class="unit-switcher">
+          <button class="unit-btn active" data-lang="zh">中文</button>
+          <button class="unit-btn" data-lang="en">English</button>
+        </div>
+        <div class="unit-switcher">
+          <button class="unit-btn active" data-unit="auto">自动</button>
+          <button class="unit-btn" data-unit="baiwan">百万</button>
+          <button class="unit-btn" data-unit="yi">亿</button>
+        </div>
+        <button class="refresh-btn" onclick="generateShareCard()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          分享统计
+        </button>
+        <button class="refresh-btn" onclick="refreshData()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          刷新
+        </button>
+      </div>
     </div>
-    <div class="header-right">
-      <div class="unit-switcher">
-        <button class="unit-btn active" data-lang="zh">中文</button>
-        <button class="unit-btn" data-lang="en">English</button>
-      </div>
-      <div class="unit-switcher">
-        <button class="unit-btn active" data-unit="auto">自动</button>
-        <button class="unit-btn" data-unit="wan">万</button>
-        <button class="unit-btn" data-unit="baiwan">百万</button>
-        <button class="unit-btn" data-unit="yi">亿</button>
-      </div>
+    <div class="header-toolbar">
       <span id="dateRange" class="date-range"></span>
+      <div class="toolbar-sep"></div>
       <div class="date-filter">
         <div class="filter-presets">
           <button class="filter-btn active" data-range="all">全部</button>
@@ -829,19 +1033,11 @@
           <button class="filter-btn" data-range="30d">近 30 天</button>
         </div>
         <div class="filter-custom">
-          <input type="date" id="dateFrom" class="date-input">
+          <input type="text" id="dateFrom" class="date-input" placeholder="YYYY-MM-DD">
           <span class="date-sep">~</span>
-          <input type="date" id="dateTo" class="date-input">
+          <input type="text" id="dateTo" class="date-input" placeholder="YYYY-MM-DD">
         </div>
       </div>
-      <button class="refresh-btn" onclick="generateShareCard()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-        分享统计
-      </button>
-      <button class="refresh-btn" onclick="refreshData()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-        刷新
-      </button>
     </div>
   </div>
 
@@ -1020,14 +1216,17 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
 <script>
 let DATA = null;
 let FILTERED = null;
 let dateFilter = { type: 'all', from: null, to: null };
-let tokenUnit = 'auto'; // auto | wan | baiwan | yi
+let tokenUnit = 'auto'; // auto | baiwan | yi
 let currentSort = { key: 'total', dir: 'desc' };
 let searchQuery = '';
 let currentLang = 'zh'; // zh | en
+let fpFrom = null, fpTo = null; // flatpickr instances
 
 // ---- i18n Language Pack ----
 const i18n = {
@@ -1043,7 +1242,6 @@ const i18n = {
       cacheWrite: '缓存写入',
       total: '总计',
       auto: '自动',
-      wan: '万',
       baiwan: '百万',
       yi: '亿',
     },
@@ -1142,9 +1340,8 @@ const i18n = {
       cacheWrite: 'Cache Write',
       total: 'Total',
       auto: 'Auto',
-      wan: '10K',
-      baiwan: '1M',
-      yi: '100M',
+      baiwan: 'M',
+      yi: 'B',
     },
     privacy: 'All data stays on your device. Nothing is sent anywhere.',
     hero: {
@@ -1244,11 +1441,12 @@ function t(key) {
 function applyDateFilter() {
   if (!DATA) return;
   if (dateFilter.type === 'all') { FILTERED = DATA; render(); return; }
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   let fromDate, toDate;
   if (dateFilter.type === 'today') { fromDate = toDate = today; }
-  else if (dateFilter.type === '7d') { toDate = today; const d = new Date(); d.setDate(d.getDate() - 6); fromDate = d.toISOString().split('T')[0]; }
-  else if (dateFilter.type === '30d') { toDate = today; const d = new Date(); d.setDate(d.getDate() - 29); fromDate = d.toISOString().split('T')[0]; }
+  else if (dateFilter.type === '7d') { toDate = today; const d = new Date(); d.setDate(d.getDate() - 6); fromDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+  else if (dateFilter.type === '30d') { toDate = today; const d = new Date(); d.setDate(d.getDate() - 29); fromDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
   else if (dateFilter.type === 'custom') { fromDate = dateFilter.from; toDate = dateFilter.to; }
   const filteredSessions = DATA.sessions.filter(s => s.date && s.date !== 'unknown' && s.date >= fromDate && s.date <= toDate);
   const filteredDailyUsage = DATA.dailyUsage.filter(d => d.date >= fromDate && d.date <= toDate);
@@ -1306,28 +1504,37 @@ function recalcTopPrompts(sessions) {
   return all.slice(0, 20);
 }
 function initDateFilter() {
-  const fromInput = document.getElementById('dateFrom'), toInput = document.getElementById('dateTo');
+  const fpLocale = currentLang === 'en' ? 'default' : 'zh';
+  const fpOpts = {
+    dateFormat: 'Y-m-d',
+    locale: fpLocale,
+    allowInput: true,
+    disableMobile: true,
+    onChange: onCustomDateChange,
+  };
   if (DATA && DATA.totals.dateRange) {
-    fromInput.min = DATA.totals.dateRange.from; fromInput.max = DATA.totals.dateRange.to;
-    toInput.min = DATA.totals.dateRange.from; toInput.max = DATA.totals.dateRange.to;
+    fpOpts.minDate = DATA.totals.dateRange.from;
+    fpOpts.maxDate = DATA.totals.dateRange.to;
   }
+  fpFrom = flatpickr('#dateFrom', { ...fpOpts });
+  fpTo = flatpickr('#dateTo', { ...fpOpts });
+
   document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active'); dateFilter.type = btn.dataset.range;
-      fromInput.value = ''; toInput.value = '';
+      fpFrom.clear(); fpTo.clear();
       applyDateFilter();
     });
   });
   function onCustomDateChange() {
-    const from = fromInput.value, to = toInput.value;
-    if (from && to && from <= to) {
+    const from = fpFrom.input.value.trim(), to = fpTo.input.value.trim();
+    const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+    if (dateRe.test(from) && dateRe.test(to) && from <= to) {
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       dateFilter = { type: 'custom', from, to }; applyDateFilter();
     }
   }
-  fromInput.addEventListener('change', onCustomDateChange);
-  toInput.addEventListener('change', onCustomDateChange);
 }
 
 function initUnitSwitcher() {
@@ -1347,6 +1554,10 @@ function initLangSwitcher() {
       document.querySelectorAll('.unit-btn[data-lang]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentLang = btn.dataset.lang;
+      // Update flatpickr locale
+      const fpLocale = currentLang === 'en' ? 'default' : 'zh';
+      if (fpFrom) fpFrom.set('locale', fpLocale);
+      if (fpTo) fpTo.set('locale', fpLocale);
       updateStaticTexts();
       updateUnitButtonTexts();
       updateDateFilterButtonTexts();
@@ -1476,9 +1687,8 @@ function updateStaticTexts() {
 function updateUnitButtonTexts() {
   const unitBtns = document.querySelectorAll('.unit-btn[data-unit]');
   unitBtns[0].textContent = t('common.auto');
-  unitBtns[1].textContent = t('common.wan');
-  unitBtns[2].textContent = t('common.baiwan');
-  unitBtns[3].textContent = t('common.yi');
+  unitBtns[1].textContent = t('common.baiwan');
+  unitBtns[2].textContent = t('common.yi');
 }
 
 function updateDateFilterButtonTexts() {
@@ -1492,29 +1702,36 @@ function updateDateFilterButtonTexts() {
 
 function fmt(n) {
   if (n == null || isNaN(n) || n === 0) return '0';
-  const suffix = currentLang === 'zh' ?
-    { yi: ' 亿', baiwan: ' 百万', wan: ' 万' } :
-    { yi: '×100M', baiwan: 'M', wan: 'K' };
+  const isZh = currentLang === 'zh';
 
   if (tokenUnit === 'yi') {
-    if (n >= 100_000_000) return (n / 100_000_000).toFixed(2) + suffix.yi;
-    if (n >= 10_000_000) return (n / 100_000_000).toFixed(3) + suffix.yi;
-    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + suffix.baiwan;
-    // Too small for 亿, fall through to auto
+    if (isZh) {
+      const v = n / 100_000_000;
+      if (n >= 100_000_000) return v.toFixed(2) + ' 亿';
+      if (n >= 1_000_000) return v.toFixed(4).replace(/0+$/, '').replace(/\.$/, '') + ' 亿';
+      return v.toFixed(6).replace(/0+$/, '').replace(/\.$/, '') + ' 亿';
+    } else {
+      const v = n / 1_000_000_000;
+      if (n >= 1_000_000_000) return v.toFixed(2) + 'B';
+      if (n >= 1_000_000) return v.toFixed(4).replace(/0+$/, '').replace(/\.$/, '') + 'B';
+      return v.toFixed(6).replace(/0+$/, '').replace(/\.$/, '') + 'B';
+    }
   }
   if (tokenUnit === 'baiwan') {
-    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + suffix.baiwan;
-    if (n >= 100_000) return (n / 1_000_000).toFixed(2) + suffix.baiwan;
-    // Too small for 百万, fall through to auto
-  }
-  if (tokenUnit === 'wan') {
-    if (n >= 10_000) return (n / 10_000).toFixed(1) + suffix.wan;
-    if (n >= 1_000) return (n / 10_000).toFixed(2) + suffix.wan;
-    // Too small for 万, fall through to auto
+    const v = n / 1_000_000;
+    const suffix = isZh ? ' 百万' : 'M';
+    if (n >= 1_000_000) return v.toFixed(1) + suffix;
+    if (n >= 1_000) return v.toFixed(4).replace(/0+$/, '').replace(/\.$/, '') + suffix;
+    return v.toFixed(6).replace(/0+$/, '').replace(/\.$/, '') + suffix;
   }
   // auto
-  if (n >= 100_000_000) return (n / 100_000_000).toFixed(2) + suffix.yi;
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (isZh) {
+    if (n >= 100_000_000) return (n / 100_000_000).toFixed(2) + ' 亿';
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  } else {
+    if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + 'B';
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  }
   if (n >= 10_000) return (n / 1_000).toFixed(0) + 'K';
   if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
   return n.toLocaleString();
@@ -1775,6 +1992,40 @@ const insightTranslations = {
       .replace(/ token。/, ' tokens.'),
     action: 'Not necessarily a problem, but worth noting. If this project has long conversations, splitting into smaller sessions could reduce its share.',
   },
+  'conversation-efficiency': {
+    title: (ins) => ins.title
+      .replace(/长对话中每条消息贵 ([\d.]+) 倍/, 'Messages cost $1x more in long conversations'),
+    description: (ins) => ins.description
+      .replace(/在你的短对话（15 条消息以下）中，每条消息约消耗 (.+?) token。在长对话（80\+ 条消息）中，每条消息约消耗 (.+?) token。这是因为 Claude 每轮都要重新读取整个历史，费用是后者的 ([\d.]+) 倍。/,
+        'In your short conversations (under 15 messages), each message uses ~$1 tokens. In long ones (80+ messages), each message uses ~$2 tokens. That\'s $3x more because Claude re-reads the entire history each turn.'),
+    action: 'This is the biggest lever to reduce token usage. Start new conversations more often. Five short sessions cost far less than one 500-message marathon.',
+  },
+  'heavy-context': {
+    title: (ins) => ins.title
+      .replace(/(\d+) 个对话以 (.+?)\+ token 的上下文开始/, '$1 conversations start with $2+ tokens of context'),
+    description: (ins) => ins.description
+      .replace(/在你输入第一条消息之前，Claude 就要读取你的 CLAUDE\.md、项目文件和系统上下文。在这 (\d+) 个对话中，这个初始上下文平均 (.+?) token。在所有这些对话中，光设置就消耗了 (.+?) token -- 而且这个上下文在每条消息中都会被重新读取。/,
+        'Before you even type your first message, Claude reads your CLAUDE.md, project files, and system context. Across these $1 conversations, this initial context averaged $2 tokens. Setup alone consumed $3 tokens — and this context is re-read every message.'),
+    action: 'Keep your CLAUDE.md files concise. Remove sections you rarely need. A smaller initial context compounds into savings on every message in the conversation.',
+  },
+  'cache-savings': {
+    title: (ins) => ins.title
+      .replace(/缓存预计帮你节省了 /, 'Caching saved you an estimated '),
+    description: (ins) => ins.description
+      .replace(/你的缓存命中率是 ([\d.]+)% -- 意味着 ([\d.]+)% 的输入 token 以 10 倍低的成本从缓存提供。如果没有缓存，你预计的 API 等效账单会是 \$([\d.]+) 而不是 \$([\d.]+)。缓存读取发生在 Claude 重新读取上次以来没有变化的部分对话时。/,
+        'Your cache hit rate is $1% — meaning $2% of input tokens were served from cache at 10x lower cost. Without caching, your estimated API-equivalent bill would be \$$3 instead of \$$4. Cache reads happen when Claude re-reads parts of the conversation that haven\'t changed since last time.'),
+    action: 'Caching works best in longer conversations where context stays stable. Shorter sessions mean less cache reuse, but also less context growth. The sweet spot is medium-length sessions focused on a single task.',
+  },
+  'smart-clear': {
+    title: (ins) => ins.title
+      .replace(/在第 ~(\d+) 轮后使用 \/clear 可以节省 token/, 'Use /clear after ~$1 turns to save tokens'),
+    description: (ins) => ins.description
+      .replace(/在 (\d+) 个对话中，消息从第 (\d+) 轮开始贵了 ([\d.]+) 倍。这是因为 Claude 每轮都要重新读取整个对话历史，费用随着上下文增长而累积。/,
+        'In $1 conversations, messages got $3x more expensive starting around turn $2. This is because Claude re-reads the entire conversation history each turn, and the cost compounds as context grows.'),
+    action: (ins) => ins.action
+      .replace(/尝试在第 (\d+) 轮左右使用 \/clear。清除之前，粘贴一个你正在做什么的简短摘要，让 Claude 为下一条消息保留上下文。你也可以使用 CONTEXT\.md 在对话之间传递笔记。/,
+        'Try using /clear around turn $1. Before clearing, paste a brief summary of what you\'re doing so Claude retains context for the next message. You can also use CONTEXT.md to carry notes between conversations.'),
+  },
 };
 
 function translateInsight(ins) {
@@ -1785,7 +2036,7 @@ function translateInsight(ins) {
     ...ins,
     title: trans.title ? trans.title(ins) : ins.title,
     description: trans.description ? trans.description(ins) : ins.description,
-    action: trans.action !== undefined ? trans.action : ins.action,
+    action: trans.action !== undefined ? (typeof trans.action === 'function' ? trans.action(ins) : trans.action) : ins.action,
   };
 }
 
