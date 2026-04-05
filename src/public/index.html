@@ -1106,6 +1106,18 @@ const i18n = {
       outputTokens: '写入',
       outputTokensTip: 'Claude 写回的 token：回复、代码、解释。通常只占总费用的一小部分。',
     },
+    drilldown: {
+      messages: '条消息',
+      toolCalls: '次工具调用',
+      rounds: '轮',
+      mostExpensive: '费用最高',
+      noPromptData: '暂无提示词数据',
+      tokenIn: '入',
+      tokenCache: '缓存',
+      tokenOut: '出',
+      costPerTurn: '每次费用',
+      costPerTurnDesc: '每个点代表一轮对话（你的消息 + Claude 的完整回复）。Y 轴显示 API 等效费用。订阅用户不需要支付这个费用，但它显示了每轮对话需要多少工作量。',
+    },
     dateFilter: {
       all: '全部',
       today: '今天',
@@ -1192,6 +1204,18 @@ const i18n = {
       inputTokensTip: 'Tokens Claude read: your messages, conversation history, file contents, and system context. This grows with each message because the full history is resent.',
       outputTokens: 'Output',
       outputTokensTip: 'Tokens Claude wrote back: replies, code, explanations. Usually a small fraction of total cost.',
+    },
+    drilldown: {
+      messages: 'messages',
+      toolCalls: 'tool calls',
+      rounds: 'rounds',
+      mostExpensive: 'most expensive',
+      noPromptData: 'No prompt data',
+      tokenIn: 'in',
+      tokenCache: 'cache',
+      tokenOut: 'out',
+      costPerTurn: 'Cost Per Turn',
+      costPerTurnDesc: 'Each dot represents one turn (your message + Claude\'s full reply). Y-axis shows API-equivalent cost. Subscribers don\'t pay this, but it shows how much work each turn requires.',
     },
     dateFilter: {
       all: 'All',
@@ -1421,6 +1445,27 @@ function updateStaticTexts() {
   const sessionsTitle = document.querySelector('.sessions-section .section-title');
   if (sessionsTitle) sessionsTitle.textContent = t('sessions.title');
 
+  // How Tokens Work section
+  const howTokensEl = document.querySelector('.how-tokens');
+  if (howTokensEl) {
+    howTokensEl.querySelector('.how-tokens-toggle h3').textContent = t('howTokens.title');
+    howTokensEl.querySelector('.how-tokens-body > p').innerHTML = t('howTokens.intro');
+    howTokensEl.querySelector('.how-tokens-example-title').textContent = t('howTokens.exampleTitle');
+    const steps = howTokensEl.querySelectorAll('.how-tokens-step');
+    const stepLabels = currentLang === 'en' ? ['Msg 1', 'Msg 2', 'Msg 3'] : ['第 1 条', '第 2 条', '第 3 条'];
+    const stepTokens = currentLang === 'en' ? ['~4K tokens', '~8K tokens', '~14K tokens'] : ['约 4K token', '约 8K token', '约 14K token'];
+    if (steps[0]) { steps[0].querySelector('.step-label').textContent = stepLabels[0]; steps[0].querySelector('.step-desc').innerHTML = t('howTokens.step1'); steps[0].querySelector('.step-tokens').textContent = stepTokens[0]; }
+    if (steps[1]) { steps[1].querySelector('.step-label').textContent = stepLabels[1]; steps[1].querySelector('.step-desc').innerHTML = t('howTokens.step2'); steps[1].querySelector('.step-tokens').textContent = stepTokens[1]; }
+    if (steps[2]) { steps[2].querySelector('.step-label').textContent = stepLabels[2]; steps[2].querySelector('.step-desc').innerHTML = t('howTokens.step3'); steps[2].querySelector('.step-tokens').textContent = stepTokens[2]; }
+    howTokensEl.querySelector('.how-tokens-total').textContent = t('howTokens.totalNote');
+    const types = howTokensEl.querySelectorAll('.how-tokens-type div:last-child');
+    if (types[0]) types[0].innerHTML = t('howTokens.typeInput');
+    if (types[1]) types[1].innerHTML = t('howTokens.typeCacheWrite');
+    if (types[2]) types[2].innerHTML = t('howTokens.typeCacheRead');
+    if (types[3]) types[3].innerHTML = t('howTokens.typeOutput');
+    howTokensEl.querySelector('.how-tokens-tip').innerHTML = t('howTokens.tip');
+  }
+
   // Footer
   const footer = document.querySelector('.footer');
   footer.innerHTML =
@@ -1446,7 +1491,7 @@ function updateDateFilterButtonTexts() {
 
 
 function fmt(n) {
-  if (n == null || isNaN(n)) return '0';
+  if (n == null || isNaN(n) || n === 0) return '0';
   const suffix = currentLang === 'zh' ?
     { yi: ' 亿', baiwan: ' 百万', wan: ' 万' } :
     { yi: '×100M', baiwan: 'M', wan: 'K' };
@@ -1454,15 +1499,18 @@ function fmt(n) {
   if (tokenUnit === 'yi') {
     if (n >= 100_000_000) return (n / 100_000_000).toFixed(2) + suffix.yi;
     if (n >= 10_000_000) return (n / 100_000_000).toFixed(3) + suffix.yi;
-    return (n / 100_000_000).toFixed(4) + suffix.yi;
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + suffix.baiwan;
+    // Too small for 亿, fall through to auto
   }
   if (tokenUnit === 'baiwan') {
     if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + suffix.baiwan;
-    return (n / 1_000_000).toFixed(2) + suffix.baiwan;
+    if (n >= 100_000) return (n / 1_000_000).toFixed(2) + suffix.baiwan;
+    // Too small for 百万, fall through to auto
   }
   if (tokenUnit === 'wan') {
     if (n >= 10_000) return (n / 10_000).toFixed(1) + suffix.wan;
-    return (n / 10_000).toFixed(2) + suffix.wan;
+    if (n >= 1_000) return (n / 10_000).toFixed(2) + suffix.wan;
+    // Too small for 万, fall through to auto
   }
   // auto
   if (n >= 100_000_000) return (n / 100_000_000).toFixed(2) + suffix.yi;
@@ -1526,8 +1574,12 @@ function escapeHtml(s) {
 function formatDate(d) {
   if (!d) return '';
   const parts = d.split('-');
-  const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  return `${months[parseInt(parts[1])-1]} ${parseInt(parts[2])}`;
+  const monthsZh = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const monthsEn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const months = currentLang === 'en' ? monthsEn : monthsZh;
+  const day = parseInt(parts[2]);
+  if (currentLang === 'en') return `${months[parseInt(parts[1])-1]} ${day}`;
+  return `${months[parseInt(parts[1])-1]} ${day}`;
 }
 
 async function fetchData() {
@@ -1579,8 +1631,9 @@ function renderWarnings() {
   const banner = document.getElementById('warningsBanner');
   if (!warnings.length) { banner.classList.remove('visible'); return; }
   banner.classList.add('visible');
+  const warnLabel = currentLang === 'en' ? 'Note:' : '注意：';
   banner.innerHTML = '<button class="warn-close" onclick="this.parentElement.classList.remove(\'visible\')">&times;</button>' +
-    '<strong>注意：</strong><ul>' + warnings.map(w => '<li>' + escapeHtml(w.message) + '</li>').join('') + '</ul>';
+    '<strong>' + warnLabel + '</strong><ul>' + warnings.map(w => '<li>' + escapeHtml(w.message) + '</li>').join('') + '</ul>';
 }
 async function refreshData() {
   document.getElementById('loading').style.display = 'flex';
@@ -1633,8 +1686,111 @@ function renderStats() {
 }
 
 // Insights
+// Insight English translations keyed by insight id
+const insightTranslations = {
+  'vague-prompts': {
+    title: (ins) => 'Short vague messages cost the most',
+    description: (ins) => ins.description
+      .replace(/(\d+) 次你发送了类似/, '$1 times you sent short messages like')
+      .replace(/的短消息，每条消息都至少消耗/, ', each consuming at least')
+      .replace(/ token 来揣测你的意图。在所有 /, ' tokens trying to guess your intent. Across all ')
+      .replace(/ 条消息中，总共消耗了 /, ' messages, a total of ')
+      .replace(/ token -- 都花在了重新读取对话、搜索文件和多次尝试理解模糊指令上。/, ' tokens were spent re-reading conversations, searching files, and trying to understand vague instructions.'),
+    action: 'Try being more specific. Instead of "yes", say "yes, update the login page and run tests". Clear instructions give Claude a clear target, finishing faster with fewer tokens.',
+  },
+  'context-growth': {
+    title: (ins) => 'Longer conversations cost more per message',
+    description: (ins) => ins.description
+      .replace(/在 (\d+) 个对话中，后面的消息比开始时的消息贵 ([\d.]+) 倍/, 'In $1 conversations, later messages cost $2x more than early ones')
+      .replace(/。为什么？每次你发送消息，Claude 都要从头重新读取整个对话。所以第 5 条消息很便宜，但第 80 条就很贵了，因为 Claude 要重新读取之前 79 条消息和所有代码。你最长的对话（/, '. Why? Every message Claude re-reads the entire conversation. Message 5 is cheap, but message 80 is expensive because Claude re-reads all 79 prior messages and code. Your longest conversation ("')
+      .replace(/\"）到最后贵了 ([\d.]+) 倍。/, '") was $1x more expensive at the end.'),
+    action: 'Start a new conversation when switching tasks. If you need prior context, paste a brief summary in the first message. This gives Claude a clean start instead of re-reading hundreds of old messages.',
+  },
+  'marathon-sessions': {
+    title: (ins) => ins.title
+      .replace(/(\d+) 个长对话消耗了所有 token 的 (\d+)%/, '$1 long conversations used $2% of all tokens'),
+    description: (ins) => ins.description
+      .replace(/你有 (\d+) 个超过 200 条消息的对话/, 'You have $1 conversations with 200+ messages')
+      .replace(/。这些对话单独就消耗了 /, '. These alone consumed ')
+      .replace(/ token -- 占了全部的 /, ' tokens — ')
+      .replace(/%。而你一般的对话大约是 /, '% of total. Your typical conversation is about ')
+      .replace(/ 条消息。长对话不一定不好，但它们费用高得不成比例，因为上下文会不断累积。/, ' messages. Long conversations aren\'t bad, but they cost disproportionately more because context accumulates.'),
+    action: 'Try one task per conversation. When the conversation drifts to a different topic, that\'s a good time to start a new one.',
+  },
+  'input-heavy': {
+    title: (ins) => ins.title
+      .replace(/只有 ([\d.]+)% 的 token 是 Claude 实际写的内容/, 'Only $1% of tokens are what Claude actually wrote'),
+    description: (ins) => ins.description
+      .replace(/有个惊人的事实：在 /, 'Here\'s a surprising fact: of ')
+      .replace(/ 总 token 中，只有 /, ' total tokens, only ')
+      .replace(/ 是 Claude 写回复的。另外 /, ' are Claude writing replies. The other ')
+      .replace(/% 是 Claude 在每次回复前重新读取你的对话历史、文件和上下文。这意味着 token 使用的最大因素不是 Claude 写了多少 -- 而是对话有多长。/, '% is Claude re-reading your conversation history, files, and context before each reply. The biggest factor in token usage isn\'t how much Claude writes — it\'s how long the conversation is.'),
+    action: 'Shorter conversations are more effective than asking for shorter replies. A 20-message conversation costs far less than a 200-message one, even with similar total output.',
+  },
+  'day-pattern': {
+    title: (ins) => {
+      const dayMap = { '周日':'Sunday','周一':'Monday','周二':'Tuesday','周三':'Wednesday','周四':'Thursday','周五':'Friday','周六':'Saturday' };
+      let t = ins.title;
+      for (const [zh, en] of Object.entries(dayMap)) t = t.replace(zh, en);
+      return t.replace(/你在(.+)使用 Claude 最多/, 'You use Claude most on $1');
+    },
+    description: (ins) => {
+      const dayMap = { '周日':'Sunday','周一':'Monday','周二':'Tuesday','周三':'Wednesday','周四':'Thursday','周五':'Friday','周六':'Saturday' };
+      let d = ins.description;
+      for (const [zh, en] of Object.entries(dayMap)) d = d.replaceAll(zh, en);
+      return d.replace(/你在(.+?)的对话平均每次消耗 /, 'Your $1 conversations average ')
+        .replace(/ token，而/, ' tokens per session, vs ')
+        .replace(/每次 /, '')
+        .replace(/。这可能意味着你在(.+?)处理更大的任务，或者你的对话倾向于更长。/, ' on $1. This might mean you tackle bigger tasks or have longer conversations on $1.');
+    },
+    action: null,
+  },
+  'model-mismatch': {
+    title: (ins) => ins.title
+      .replace(/(\d+) 个简单对话不必要地使用了 Opus/, '$1 simple conversations used Opus unnecessarily'),
+    description: (ins) => ins.description
+      .replace(/这些对话消息数少于 10 条，却在 Opus 上消耗了 /, 'These conversations had fewer than 10 messages yet consumed ')
+      .replace(/ token：/, ' tokens on Opus: ')
+      .replace(/。Opus 是能力最强的模型，但也是最贵的。对于简单问题和小型任务，Sonnet 或 Haiku 能给出类似结果，成本却低得多。/, '. Opus is the most capable model but also the most expensive. For simple questions and small tasks, Sonnet or Haiku can give similar results at much lower cost.'),
+    action: 'Use /model to switch to Sonnet or Haiku for simple tasks. Save Opus for complex multi-file changes, architecture decisions, or tricky debugging.',
+  },
+  'tool-heavy': {
+    title: (ins) => ins.title
+      .replace(/(\d+) 个对话的工具调用是消息的 (\d+) 倍/, '$1 conversations had $2x more tool calls than messages'),
+    description: (ins) => ins.description
+      .replace(/在这些对话中，Claude 对你每条消息大约调用 ~(\d+) 次工具/, 'In these conversations, Claude made ~$1 tool calls per message')
+      .replace(/。每次工具调用（读取文件、运行命令、搜索代码）都是一次完整的往返，需要重新读取整个对话。这 /, '. Each tool call (reading files, running commands, searching code) is a full round-trip that re-reads the entire conversation. These ')
+      .replace(/ 个对话总共消耗了 /, ' conversations consumed ')
+      .replace(/ token。/, ' tokens total.'),
+    action: 'Point to specific files and line numbers when possible. "Fix the bug in src/auth.js line 42" triggers far fewer tool calls than "fix the login bug", which requires Claude to search for the right file first.',
+  },
+  'project-dominance': {
+    title: (ins) => ins.title
+      .replace(/(\d+)% 的 token 用在了一个项目上：/, '$1% of tokens went to one project: '),
+    description: (ins) => ins.description
+      .replace(/你的"(.+?)"项目消耗了 /, 'Your "$1" project consumed ')
+      .replace(/ token，总共 /, ' tokens out of ')
+      .replace(/。占了你全部使用的 /, ' total. That\'s ')
+      .replace(/%。第二接近的项目只消耗了 /, '% of all usage. The runner-up only consumed ')
+      .replace(/ token。/, ' tokens.'),
+    action: 'Not necessarily a problem, but worth noting. If this project has long conversations, splitting into smaller sessions could reduce its share.',
+  },
+};
+
+function translateInsight(ins) {
+  if (currentLang === 'zh') return ins;
+  const trans = insightTranslations[ins.id];
+  if (!trans) return ins;
+  return {
+    ...ins,
+    title: trans.title ? trans.title(ins) : ins.title,
+    description: trans.description ? trans.description(ins) : ins.description,
+    action: trans.action !== undefined ? trans.action : ins.action,
+  };
+}
+
 function renderInsights() {
-  const insights = FILTERED.insights || [];
+  const insights = (FILTERED.insights || []).map(translateInsight);
   const section = document.getElementById('insightsSection');
   if (!insights.length) { section.style.display = 'none'; return; }
 
@@ -1822,7 +1978,7 @@ function renderModelChart() {
   ctx.fillText(fmt(total), cx, cy + 2);
   ctx.font = '500 10px Inter, system-ui';
   ctx.fillStyle = '#94A3B8';
-  ctx.fillText('总计', cx, cy + 16);
+  ctx.fillText(t('common.total'), cx, cy + 16);
 
   document.getElementById('modelLegend').innerHTML = slices.map(d => {
     const pct = ((d.totalTokens / total) * 100).toFixed(1);
@@ -1844,13 +2000,13 @@ function toggleProjectDrawer(i) {
 
 function buildDrawerContent(p) {
   if (!p.topPrompts || p.topPrompts.length === 0) {
-    return '<div class="drawer-empty">暂无提示词数据</div>';
+    return '<div class="drawer-empty">' + t('drilldown.noPromptData') + '</div>';
   }
   const items = p.topPrompts.map((pr, i) => {
     const toolEntries = Object.entries(pr.toolCounts || {}).sort((a, b) => b[1] - a[1]);
     const chips = toolEntries.map(([name, count]) =>
       '<span class="tool-chip">' + count + '\u00d7\u00a0' + escapeHtml(name) + '</span>'
-    ).join('') + (pr.continuations > 0 ? '<span class="tool-chip">+' + pr.continuations + ' 轮</span>' : '');
+    ).join('') + (pr.continuations > 0 ? '<span class="tool-chip">+' + pr.continuations + ' ' + t('drilldown.rounds') + '</span>' : '');
     const badge = '<span class="model-badge ' + modelClass(pr.model) + '"><span class="model-dot"></span>' + modelShort(pr.model) + '</span>';
     const tokVal = fmt(pr.totalTokens);
     const tokSub = fmt(pr.inputTokens) + ' / ' + fmt(pr.outputTokens);
@@ -1948,7 +2104,7 @@ function renderTopPrompts() {
       </div>
       <div class="prompt-tokens">
         <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--indigo)">${fmt(p.totalTokens)}</div>
-        <div class="sub">${fmt(p.inputTokens)} 入 / ${fmt(cached)} 缓存 / ${fmt(p.outputTokens)} 出</div>
+        <div class="sub">${fmt(p.inputTokens)} ${t('drilldown.tokenIn')} / ${fmt(cached)} ${t('drilldown.tokenCache')} / ${fmt(p.outputTokens)} ${t('drilldown.tokenOut')}</div>
       </div>
     </div>`;
   }).join('');
@@ -2154,7 +2310,7 @@ function renderTurnCostChart(grouped) {
     ctx.fillStyle = '#F59E0B';
     ctx.font = '600 10px Inter, system-ui';
     // Position label: keep it inside chart bounds
-    const labelText = '$' + costs[inflectionIdx].toFixed(2) + ' \u2014 费用最高';
+    const labelText = '$' + costs[inflectionIdx].toFixed(2) + ' \u2014 ' + t('drilldown.mostExpensive');
     const labelWidth = ctx.measureText(labelText).width;
     if (ix + labelWidth / 2 > w - padR) {
       ctx.textAlign = 'right';
@@ -2204,8 +2360,14 @@ function renderDrilldownInsight(grouped, session) {
   if (hasSpike) {
     // Has an expensive spike - explain it and recommend /clear
     const spikeCost = maxTurnCost;
-    title = `\u26A0\uFE0F 第 ${topTurnIdx + 1} 轮费用 $${spikeCost.toFixed(2)} \u2014 是典型轮次的 ${median > 0 ? (spikeCost / median).toFixed(0) + ' 倍' : '数倍'}`;
-    body = `典型轮次费用中位数: $${median.toFixed(4)}。第 ${topTurnIdx + 1} 轮费用激增是因为此时上下文已经变得很大。在这轮之前运行 /clear 可以重置上下文，把费用降下来。提示：如果你注意到 Claude 变慢或者要切换到不同任务，这就是使用 /clear 的好时机。`;
+    const multiplier = median > 0 ? (spikeCost / median).toFixed(0) : '';
+    if (currentLang === 'en') {
+      title = `\u26A0\uFE0F Turn ${topTurnIdx + 1} cost $${spikeCost.toFixed(2)} \u2014 ${multiplier ? multiplier + 'x' : 'many times'} the typical turn`;
+      body = `Median turn cost: $${median.toFixed(4)}. Turn ${topTurnIdx + 1} spiked because the context had grown large by then. Running /clear before this turn would have reset the context and brought the cost down. Tip: if you notice Claude slowing down or you\'re switching to a different task, that\'s a good time to use /clear.`;
+    } else {
+      title = `\u26A0\uFE0F 第 ${topTurnIdx + 1} 轮费用 $${spikeCost.toFixed(2)} \u2014 是典型轮次的 ${multiplier ? multiplier + ' 倍' : '数倍'}`;
+      body = `典型轮次费用中位数: $${median.toFixed(4)}。第 ${topTurnIdx + 1} 轮费用激增是因为此时上下文已经变得很大。在这轮之前运行 /clear 可以重置上下文，把费用降下来。提示：如果你注意到 Claude 变慢或者要切换到不同任务，这就是使用 /clear 的好时机。`;
+    }
     bg = 'linear-gradient(135deg,rgba(245,158,11,0.08),rgba(244,63,94,0.06))';
     border = 'rgba(245,158,11,0.15)';
     color = '#D97706';
@@ -2213,8 +2375,13 @@ function renderDrilldownInsight(grouped, session) {
     // Long conversation, no big spike
     const lastQuarter = costs.slice(Math.floor(costs.length * 0.75));
     const lastQuarterAvg = lastQuarter.reduce((a, b) => a + b, 0) / lastQuarter.length;
-    title = `\u2139\uFE0F ${costs.length} 轮是一个长对话`;
-    body = `缓存使费用保持稳定（平均 ~$${avgCost.toFixed(4)}/轮），但上下文窗口仍然变得很大。后半轮平均 ~$${lastQuarterAvg.toFixed(4)}。考虑拆分成更短的对话，以便更好地集中注意力并降低触碰上下文限制的风险。`;
+    if (currentLang === 'en') {
+      title = `\u2139\uFE0F ${costs.length} turns is a long conversation`;
+      body = `Cache kept costs stable (avg ~$${avgCost.toFixed(4)}/turn), but the context window still grew large. Later turns averaged ~$${lastQuarterAvg.toFixed(4)}. Consider splitting into shorter conversations for better focus and lower risk of hitting context limits.`;
+    } else {
+      title = `\u2139\uFE0F ${costs.length} 轮是一个长对话`;
+      body = `缓存使费用保持稳定（平均 ~$${avgCost.toFixed(4)}/轮），但上下文窗口仍然变得很大。后半轮平均 ~$${lastQuarterAvg.toFixed(4)}。考虑拆分成更短的对话，以便更好地集中注意力并降低触碰上下文限制的风险。`;
+    }
     bg = 'linear-gradient(135deg,rgba(99,102,241,0.06),rgba(99,102,241,0.02))';
     border = 'rgba(99,102,241,0.12)';
     color = '#6366F1';
@@ -2222,8 +2389,13 @@ function renderDrilldownInsight(grouped, session) {
     // Normal/healthy
     const totalTokens = session.totalTokens;
     const cacheRate = session.queries ? Math.round(session.queries.reduce((s, q) => s + (q.cacheReadTokens || 0), 0) / Math.max(1, totalTokens) * 100) : 0;
-    title = `\u2705 这个对话效率很高`;
-    body = `${costs.length} 轮，平均 ~$${avgCost.toFixed(4)}/轮，总计约 ~$${totalCost.toFixed(2)} API 等效费用。${cacheRate > 50 ? `缓存命中率: ${cacheRate}%（很好）。` : cacheRate > 0 ? `缓存命中率: ${cacheRate}%。` : ''} 未检测到问题。`;
+    if (currentLang === 'en') {
+      title = `\u2705 This conversation is efficient`;
+      body = `${costs.length} turns, avg ~$${avgCost.toFixed(4)}/turn, ~$${totalCost.toFixed(2)} total API-equivalent cost. ${cacheRate > 50 ? `Cache hit rate: ${cacheRate}% (great). ` : cacheRate > 0 ? `Cache hit rate: ${cacheRate}%. ` : ''}No issues detected.`;
+    } else {
+      title = `\u2705 这个对话效率很高`;
+      body = `${costs.length} 轮，平均 ~$${avgCost.toFixed(4)}/轮，总计约 ~$${totalCost.toFixed(2)} API 等效费用。${cacheRate > 50 ? `缓存命中率: ${cacheRate}%（很好）。` : cacheRate > 0 ? `缓存命中率: ${cacheRate}%。` : ''} 未检测到问题。`;
+    }
     bg = 'linear-gradient(135deg,rgba(16,185,129,0.06),rgba(16,185,129,0.02))';
     border = 'rgba(16,185,129,0.12)';
     color = '#059669';
@@ -2247,7 +2419,7 @@ function openDrilldown(sessionId) {
 
   document.getElementById('drilldownTitle').textContent = session.firstPrompt.substring(0, 140);
   document.getElementById('drilldownMeta').textContent =
-    `${formatDate(session.date)} \u00B7 ${modelShort(session.model)} \u00B7 ${session.queryCount} 条消息 \u00B7 ${fmt(session.totalTokens)} token`;
+    `${formatDate(session.date)} \u00B7 ${modelShort(session.model)} \u00B7 ${session.queryCount} ${t('drilldown.messages')} \u00B7 ${fmt(session.totalTokens)} token`;
 
   const grouped = groupSessionQueries(session.queries);
 
@@ -2262,14 +2434,14 @@ function openDrilldown(sessionId) {
   renderDrilldownInsight(grouped, session);
 
   document.getElementById('queryList').innerHTML = grouped.map((q, i) => {
-    const cont = q.continuations > 0 ? ` + ${q.continuations} 次工具调用` : '';
+    const cont = q.continuations > 0 ? ` + ${q.continuations} ${t('drilldown.toolCalls')}` : '';
     const cached = q.cacheReadTokens || 0;
     return `<div class="query-item">
       <div class="query-num">${i + 1}</div>
       <div class="query-prompt">${escapeHtml(q.prompt.substring(0, 500))}</div>
       <div class="query-tokens-col">
         <div class="total">${fmt(q.totalTokens)}</div>
-        <div class="detail">${fmt(q.inputTokens)} 入 / ${fmt(cached)} 缓存 / ${fmt(q.outputTokens)} 出${cont}</div>
+        <div class="detail">${fmt(q.inputTokens)} ${t('drilldown.tokenIn')} / ${fmt(cached)} ${t('drilldown.tokenCache')} / ${fmt(q.outputTokens)} ${t('drilldown.tokenOut')}${cont}</div>
       </div>
     </div>`;
   }).join('');
@@ -2305,7 +2477,7 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
 
 async function generateShareCard() {
   if (!DATA) return;
-  const t = FILTERED.totals;
+  const totals = FILTERED.totals;
 
   await document.fonts.ready;
 
@@ -2337,17 +2509,19 @@ async function generateShareCard() {
   // Title
   ctx.fillStyle = '#F8FAFC';
   ctx.font = '800 42px Inter, system-ui';
-  ctx.fillText('我的 Claude Code 统计', 60, 80);
+  const shareTitle = currentLang === 'en' ? 'My Claude Code Stats' : '我的 Claude Code 统计';
+  ctx.fillText(shareTitle, 60, 80);
 
   // Date range
-  if (t.dateRange) {
+  if (totals.dateRange) {
     ctx.fillStyle = '#94A3B8';
     ctx.font = '500 18px Inter, system-ui';
-    ctx.fillText(`${t.dateRange.from} 至 ${t.dateRange.to}`, 60, 116);
+    const sep = currentLang === 'en' ? ' to ' : ' 至 ';
+    ctx.fillText(`${totals.dateRange.from}${sep}${totals.dateRange.to}`, 60, 116);
   }
 
   // Top insight in amber
-  const insights = FILTERED.insights || [];
+  const insights = (FILTERED.insights || []).map(translateInsight);
   if (insights.length > 0) {
     ctx.fillStyle = '#F59E0B';
     ctx.font = '600 20px Inter, system-ui';
@@ -2355,11 +2529,14 @@ async function generateShareCard() {
   }
 
   // 2x2 Stats grid
+  const shareLabels = currentLang === 'en'
+    ? ['Total Tokens', 'Sessions', 'Cache Hit Rate', 'Est. API Cost']
+    : ['总 Token', '对话数', '缓存命中率', '预计 API 费用'];
   const stats = [
-    { label: '总 Token', value: fmt(t.totalTokens) },
-    { label: '对话数', value: fmtFull(t.totalSessions) },
-    { label: '缓存命中率', value: ((t.cacheHitRate || 0) * 100).toFixed(0) + '%' },
-    { label: '预计 API 费用', value: '$' + (t.totalCost || 0).toFixed(2) },
+    { label: shareLabels[0], value: fmt(totals.totalTokens) },
+    { label: shareLabels[1], value: fmtFull(totals.totalSessions) },
+    { label: shareLabels[2], value: ((totals.cacheHitRate || 0) * 100).toFixed(0) + '%' },
+    { label: shareLabels[3], value: '$' + (totals.totalCost || 0).toFixed(2) },
   ];
 
   const gridY = 230;
