@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell:*)",
+      "Bash(winget install:*)",
+      "Read(//d/AI/Obsidian/**)",
+      "Bash(dir \"D:\\\\AI\\\\Obsidian\" /a)",
+      "Bash(node:*)",
+      "Bash(export OBSIDIAN_VAULT_PATH=\"D:\\\\\\\\AI\\\\\\\\ObsidianVault\")",
+      "Bash(rm -rf /c/Users/admin/.claude/skills/test-hello-world)",
+      "Bash(rm -rf /d/AI/ObsidianVault/Projects/test-hello-world.md)",
+      "Bash(rm -rf /d/AI/ObsidianVault/Phases/test-hello-world)",
+      "Bash(ls:*)",
+      "Bash(echo \"D:\\\\\\\\AI\\\\\\\\Obsidian\")",
+      "Bash(rm -rf /c/Users/admin/Documents/ObsidianVault)",
+      "Bash(rm -rf /c/Users/admin/.claude/skills/hello-world)"
+    ]
+  }
+}

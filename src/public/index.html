@@ -1820,7 +1820,6 @@ function renderDailyChart() {
   const canvas = document.getElementById('dailyChart');
   const ctx = canvas.getContext('2d');
   const data = FILTERED.dailyUsage;
-  if (!data.length) return;
 
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.parentElement.clientWidth - 48;
@@ -1830,7 +1829,16 @@ function renderDailyChart() {
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, w, h);
 
+  if (!data.length) {
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = '500 14px Inter, system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(currentLang === 'en' ? 'No data for selected period' : '所选时间段内没有数据', w / 2, h / 2);
+    return;
+  }
+
   const maxTotal = Math.max(...data.map(d => d.totalTokens));
+  if (maxTotal <= 0) return;
   const barW = Math.max(8, Math.min(32, (w - 52) / data.length - 3));
   const gap = 3;
   const chartH = h - 36;
@@ -1935,13 +1943,21 @@ function renderModelChart() {
   const canvas = document.getElementById('modelChart');
   const ctx = canvas.getContext('2d');
   const data = FILTERED.modelBreakdown;
-  if (!data.length) return;
 
   const dpr = window.devicePixelRatio || 1;
   const size = Math.min(180, canvas.parentElement.clientWidth - 48);
   canvas.width = size * dpr; canvas.height = size * dpr;
   canvas.style.width = size + 'px'; canvas.style.height = size + 'px';
   ctx.scale(dpr, dpr);
+
+  if (!data.length) {
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = '500 14px Inter, system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(currentLang === 'en' ? 'No data' : '暂无数据', size / 2, size / 2);
+    document.getElementById('modelLegend').innerHTML = '';
+    return;
+  }
 
   const cx = size/2, cy = size/2, r = size/2 - 6, innerR = r * 0.6;
   const total = data.reduce((s, d) => s + d.totalTokens, 0);
