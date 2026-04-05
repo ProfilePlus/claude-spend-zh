@@ -1,0 +1,8 @@
+node_modules/
+.agents/
+.claude/
+.trae/
+.playwright-mcp/
+skills-lock.json
+verify-*.png
+*.log
