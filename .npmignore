@@ -1,0 +1,21 @@
+# Editor / tool files
+.agents/
+.claude/
+.trae/
+.playwright-mcp/
+skills-lock.json
+
+# Debug screenshots
+*.png
+screenshots/
+screenshots-dashboard/
+
+# Debug snapshots
+snapshot-*.md
+
+# Misc
+node_modules/
+package-lock.json
+landing.html
+vercel.json
+*.log
