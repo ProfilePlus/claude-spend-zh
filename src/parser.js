@@ -199,7 +199,14 @@ async function parseAllSessions() {
       const totalTokens = inputTokens + cacheCreationTokens + cacheReadTokens + outputTokens;
 
       const firstTimestamp = entries.find(e => e.timestamp)?.timestamp;
-      const date = firstTimestamp ? firstTimestamp.split('T')[0] : 'unknown';
+      const date = firstTimestamp ? (() => {
+        const d = new Date(firstTimestamp);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        // Use local time to get the date in Asia/Shanghai timezone
+        return `${year}-${month}-${day}`;
+      })() : 'unknown';
 
       // Primary model
       const modelCounts = {};
